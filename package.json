@@ -2,7 +2,7 @@
   "name": "rc-cli",
   "version": "0.0.0",
   "main": "index.js",
-  "bin": "do.js",
+  "bin": "cli.js",
   "engines": {
     "node": ">=8.12.0"
   },
