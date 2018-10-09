@@ -17,6 +17,38 @@ const gotPl = got.extend({
   headers: { Authorization: 'Client-Key 773aea60-0e80-41bb-9c7f-e6d7c3ad17fb' }
 })
 
+// eslint-disable-next-line no-sparse-arrays,comma-spacing
+const ffmpegOptions = ['-y', '-ss',, '-i',, '-acodec', 'copy', '-t',,]
+
+const booya = (one, url) => new Promise((resolve, reject) => {
+  const outFilename = `${one.IdMediaUnique}.aac`
+  const bar = new ProgressBar(':bar :eta s.', { clear: true, total: one.Duration })
+  const opts = [...ffmpegOptions]
+  opts[2] = one.SeekTime
+  opts[4] = url
+  opts[8] = one.Duration
+  opts[9] = outFilename
+  const ff = spawn('ffmpeg', opts)
+  let lastSecs = 0
+  ff.stderr.on('data', (data) => {
+    const time = data.toString().match(re3)
+    if (time) {
+      const [, h, m, s, ms] = time
+      const secs = Date.UTC(1970, 0, 1, parseInt(h, 10), parseInt(m, 10), parseInt(s, 10) + Math.round(parseInt(ms, 10) / 100)) / 1000
+      bar.tick(secs - lastSecs)
+      lastSecs = secs
+    }
+  })
+  ff.once('close', (code) => {
+    if (code) {
+      reject(new Error(`ffmpeg process exited with code ${code}`))
+    } else {
+      resolve(outFilename)
+    }
+  })
+  ff.once('error', reject)
+})
+
 const big = async (cnt) => {
   console.error('Parsing...')
   const x = cnt.match(re)
@@ -33,46 +65,12 @@ const big = async (cnt) => {
   }
   console.error(one.Title, one.Broad, one.IdMediaUnique)
   const outFilename = `${one.IdMediaUnique}.aac`
-
   if (fs.existsSync(outFilename)) {
     return console.error('Already downloaded:', outFilename)
   }
-
   const { body: { url } } = await gotPl(`https://services.radio-canada.ca/media/validation/v2/?connectionType=hd&output=json&multibitrate=true&deviceType=ipad&appCode=medianet&idMedia=${one.IdMedia}`)
   console.error('Reading stream...')
-  return new Promise((resolve, reject) => {
-    const bar = new ProgressBar(':bar :eta s.', { total: one.Duration })
-    const ff = spawn('ffmpeg', [
-      '-y',
-      '-ss',
-      one.SeekTime,
-      '-i',
-      url,
-      '-acodec',
-      'copy',
-      '-t',
-      one.Duration,
-      outFilename
-    ])
-    let lastSecs = 0
-    ff.stderr.on('data', (data) => {
-      const time = data.toString().match(re3)
-      if (time) {
-        const [, h, m, s, ms] = time
-        const secs = Date.UTC(1970, 0, 1, parseInt(h, 10), parseInt(m, 10), parseInt(s, 10) + Math.round(parseInt(ms, 10) / 100)) / 1000
-        bar.tick(secs - lastSecs)
-        lastSecs = secs
-      }
-    })
-    ff.once('close', (code) => {
-      if (code) {
-        reject(new Error(`ffmpeg process exited with code ${code}`))
-      } else {
-        resolve(outFilename)
-      }
-    })
-    ff.once('error', reject)
-  })
+  return booya(one, url)
 }
 
 module.exports = (s) => got(s)
@@ -88,3 +86,6 @@ module.exports = (s) => got(s)
     }
     throw err
   })
+
+module.exports.big = big
+module.exports.booya = booya
