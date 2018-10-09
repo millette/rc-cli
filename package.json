@@ -1,14 +1,25 @@
 {
   "name": "rc-cli",
   "version": "0.0.0",
+  "main": "index.js",
+  "bin": "do.js",
+  "engines": {
+    "node": ">=8.12.0"
+  },
   "license": "AGPL-3.0",
   "dependencies": {
-    "got": "^9.2.2"
+    "got": "^9.2.2",
+    "progress": "^2.0.0"
   },
   "devDependencies": {
+    "ava": "^1.0.0-beta.8",
+    "dependency-check": "^3.2.1",
+    "nyc": "^13.0.1",
     "standard": "^12.0.1"
   },
   "scripts": {
-    "lint": "standard"
+    "lint": "standard",
+    "test": "standard && nyc ava",
+    "deps": "standard && dependency-check . && dependency-check . --unused --no-dev"
   }
 }
