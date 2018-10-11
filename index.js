@@ -1,26 +1,66 @@
 'use strict'
 
 // core
-const fs = require('fs')
+// const fs = require('fs')
 const { spawn } = require('child_process')
 
 // npm
 const got = require('got')
 const ProgressBar = require('progress')
+const decode = require('parse-entities')
+
+// self
+const { name, version } = require('./package.json')
 
 const re = / data-name="audiofil".+>([^]+?)<\/script>/
-const re2 = /mediaUniqueId.*?:.*?'(.+?)'/
 const re3 = / time=(\d\d):(\d\d):(\d\d)\.(\d\d) bitrate/
+const reMedias = /A11yTitlePlayPause *: *(\{[^]+?\})/g
 
+const gotStream = got.extend({ headers: { 'User-Agent': `${name} v${version}` } })
+const Authorization = 'Client-Key 773aea60-0e80-41bb-9c7f-e6d7c3ad17fb'
 const gotPl = got.extend({
   json: true,
-  headers: { Authorization: 'Client-Key 773aea60-0e80-41bb-9c7f-e6d7c3ad17fb' }
+  headers: {
+    'User-Agent': `${name} v{$version}`,
+    Authorization
+  }
 })
 
 // eslint-disable-next-line no-sparse-arrays,comma-spacing
 const ffmpegOptions = ['-y', '-ss',, '-i',, '-acodec', 'copy', '-t',,]
 
-const booya = (one, url) => new Promise((resolve, reject) => {
+const parseJsObject = (str) => {
+  // console.log('STR:', str)
+  // eslint-disable-next-line no-eval
+  const { mediaUniqueId, playTitle } = eval(`let $root = { mediaUniqueId: null }, isPlaying, play; play = ${str}`)
+  return mediaUniqueId && playTitle && {
+    IdMediaUnique: mediaUniqueId,
+    Title: decode(decode(playTitle))
+      .replace(' (Écouter l’élément)', '')
+      .replace(' (Écouter le segment)', '')
+  }
+}
+
+const findEm = (str) => {
+  let ar
+  const ret = []
+  let o
+  while ((ar = reMedias.exec(str)) !== null) {
+    if ((o = parseJsObject(ar[1]))) {
+      ret.push(o)
+    }
+  }
+  if (ret.length) {
+    return ret
+  }
+  throw new Error('None found.')
+}
+
+const readStream = ({ one, body }) => new Promise((resolve, reject) => {
+  // console.log('BODY:', body)
+  const { url } = body
+  if (!url) { return }
+  console.error('Reading stream...')
   const outFilename = `${one.IdMediaUnique}.aac`
   const bar = new ProgressBar(':bar :eta s.', { clear: true, total: one.Duration })
   const opts = [...ffmpegOptions]
@@ -49,33 +89,76 @@ const booya = (one, url) => new Promise((resolve, reject) => {
   ff.once('error', reject)
 })
 
-const big = async (cnt) => {
-  console.error('Parsing...')
-  const x = cnt.match(re)
+const findOne = (j, o1) => {
+  const thing = o1.IdMediaUnique && j.QueueItems.find(({ IdMediaUnique }) => IdMediaUnique === o1.IdMediaUnique)
+  if (!thing || !thing.Duration) {
+    return
+  }
+  if (thing.RelatedContents && thing.RelatedContents.length) {
+    thing.RelatedContents = thing.RelatedContents.map((a) => ({
+      ...a,
+      Title: decode(a.Title)
+    }))
+  } else {
+    delete thing.RelatedContents
+  }
+  return {
+    ...thing,
+    ...o1,
+    playlistUrl: `https://services.radio-canada.ca/media/validation/v2/?connectionType=hd&output=json&multibitrate=true&deviceType=ipad&appCode=medianet&idMedia=${thing.IdMedia}`,
+    context: j.QueueContext
+  }
+}
+
+const findMeta = async (s) => {
+  if (typeof s !== 'string' || !s) {
+    throw new Error('URL must start with https://ici.radio-canada.ca/')
+  }
+  s = s.replace('http://', 'https://')
+  if (s.indexOf('https://')) {
+    s = `https://${s}`
+  }
+  if (s.indexOf('https://ici.radio-canada.ca/')) {
+    throw new Error('URL must start with https://ici.radio-canada.ca/')
+  }
+  const { body } = await gotStream(s)
+  const x = body.match(re)
   if (!x || !x[1]) {
-    console.error('yikes1, x:', x)
     throw new Error('Yikes1')
   }
   const j = JSON.parse(x[1])
-  const x2 = cnt.match(re2)
-  const one = j && j.QueueItems && x2 && x2[1] && j.QueueItems.find(({ IdMediaUnique }) => IdMediaUnique === x2[1])
-  if (!one) {
-    console.error('yikes2, x2:', Object.keys(x2), x2[1])
-    throw new Error('Yikes2')
+  if (!j.QueueItems || !j.QueueItems.length) {
+    throw new Error('No items found.')
   }
-  console.error(one.Title, one.Broad, one.IdMediaUnique)
-  const outFilename = `${one.IdMediaUnique}.aac`
-  if (fs.existsSync(outFilename)) {
-    return console.error('Already downloaded:', outFilename)
+  const ret = findEm(body).map(findOne.bind(null, j)).filter(Boolean)
+  if (!ret.length) {
+    throw new Error('No valid items match.')
   }
-  const { body: { url } } = await gotPl(`https://services.radio-canada.ca/media/validation/v2/?connectionType=hd&output=json&multibitrate=true&deviceType=ipad&appCode=medianet&idMedia=${one.IdMedia}`)
-  console.error('Reading stream...')
-  return booya(one, url)
+  return ret
 }
 
-module.exports = (s) => got(s)
-  .then(({ body }) => body)
-  .then(big)
+const findStream = async (all) => {
+  const [one] = all
+  if (all.length > 1) {
+    console.log(
+      'More available:',
+      all.slice(1).map(({ Title, Duration }) => ({ Title, Duration }))
+    )
+  }
+  const { body } = await gotPl(one.playlistUrl)
+  if (body.message) {
+    const err = new Error(body.message)
+    err.errorCode = body.errorCode
+    throw err
+  }
+
+  return { one, body }
+}
+
+/*
+module.exports = (s) => findMeta(s)
+  .then(findStream)
+  .then(readStream)
   .then((outFilename) => outFilename && console.error('Downloaded', outFilename))
   .catch((err) => {
     if ((err.errno === 'ENOENT') && (err.path === 'ffmpeg')) {
@@ -86,6 +169,8 @@ module.exports = (s) => got(s)
     }
     throw err
   })
+*/
 
-module.exports.big = big
-module.exports.booya = booya
+module.exports.findStream = findStream
+module.exports.findMeta = findMeta
+module.exports.readStream = readStream
