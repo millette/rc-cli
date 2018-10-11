@@ -9,6 +9,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "got": "^9.2.2",
+    "parse-entities": "^1.2.0",
     "progress": "^2.0.0"
   },
   "devDependencies": {
