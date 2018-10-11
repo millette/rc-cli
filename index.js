@@ -3,6 +3,8 @@
 // core
 // const fs = require('fs')
 const { spawn } = require('child_process')
+const { parse } = require('querystring')
+const { URL } = require('url')
 
 // npm
 const got = require('got')
@@ -137,22 +139,28 @@ const findMeta = async (s) => {
   return ret
 }
 
-const findStream = async (all) => {
-  const [one] = all
-  if (all.length > 1) {
-    console.log(
-      'More available:',
-      all.slice(1).map(({ Title, Duration }) => ({ Title, Duration }))
-    )
+const findStream = async (one) => {
+  if (!one || !one.playlistUrl) {
+    throw new Error('Argument should be an object with a playlistUrl field.')
   }
-  const { body } = await gotPl(one.playlistUrl)
-  if (body.message) {
-    const err = new Error(body.message)
-    err.errorCode = body.errorCode
+  const { body: { message, errorCode, url, bitrates } } = await gotPl(one.playlistUrl)
+  if (message) {
+    const err = new Error(message)
+    err.errorCode = errorCode
     throw err
   }
 
-  return { one, body }
+  const { origin, search, pathname } = new URL(url)
+  const query = parse(search.slice(1), '~')
+
+  return {
+    ...one,
+    bitrates,
+    streamUrl: url,
+    origin,
+    query,
+    pathname
+  }
 }
 
 /*
