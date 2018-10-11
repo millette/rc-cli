@@ -7,6 +7,12 @@
     "node": ">=8.12.0"
   },
   "license": "AGPL-3.0",
+  "repository": "millette/rc-cli",
+  "author": {
+    "name": "Robin Millette",
+    "email": "robin@millette.info",
+    "url": "http://robin.millette.info"
+  },
   "dependencies": {
     "got": "^9.2.2",
     "parse-entities": "^1.2.0",
@@ -14,6 +20,7 @@
   },
   "devDependencies": {
     "ava": "^1.0.0-beta.8",
+    "coveralls": "^3.0.2",
     "dependency-check": "^3.2.1",
     "nyc": "^13.0.1",
     "standard": "^12.0.1"
@@ -21,6 +28,7 @@
   "scripts": {
     "lint": "standard",
     "test": "standard && nyc ava",
-    "deps": "standard && dependency-check . && dependency-check . --unused --no-dev"
+    "deps": "standard && dependency-check . && dependency-check . --unused --no-dev",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
   }
 }
