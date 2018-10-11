@@ -139,27 +139,44 @@ const findMeta = async (s) => {
   return ret
 }
 
+const readStreamAll = async (s) => {
+  const all = await findMeta(s)
+  if (!all.length) {
+    throw new Error('No stream found.')
+  }
+  return Promise.all(all.map(findStream))
+}
+
+const readStreamIfSingle = async (s) => {
+  const all = await findMeta(s)
+  if (all.length !== 1) {
+    throw new Error('Not single.')
+  }
+  return findStream(all[0])
+}
+
 const findStream = async (one) => {
   if (!one || !one.playlistUrl) {
     throw new Error('Argument should be an object with a playlistUrl field.')
   }
   const { body: { message, errorCode, url, bitrates } } = await gotPl(one.playlistUrl)
-  if (message) {
-    const err = new Error(message)
-    err.errorCode = errorCode
+  if (message || errorCode) {
+    const err = new Error(message || 'Undetermined error')
+    if (errorCode) {
+      err.errorCode = errorCode
+    }
     throw err
   }
-
   const { origin, search, pathname } = new URL(url)
-  const query = parse(search.slice(1), '~')
-
   return {
     ...one,
     bitrates,
-    streamUrl: url,
-    origin,
-    query,
-    pathname
+    streamUrl: {
+      full: url,
+      origin,
+      query: parse(search.slice(1), '~'),
+      pathname
+    }
   }
 }
 
@@ -182,3 +199,5 @@ module.exports = (s) => findMeta(s)
 module.exports.findStream = findStream
 module.exports.findMeta = findMeta
 module.exports.readStream = readStream
+module.exports.readStreamIfSingle = readStreamIfSingle
+module.exports.readStreamAll = readStreamAll
