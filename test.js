@@ -76,16 +76,11 @@ test('Single segment #2', async (t) => {
   t.is(IdMediaUnique, '7967514-51')
 })
 
-// FIXME: these will change each day...
 test('Variable daily', async (t) => {
   const all = await findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info')
-  const [{ Duration, SeekTime, IdMediaUnique, context: { Id, TitleProgramme } }] = all
-  t.is(all.length, 17)
-  t.is(Duration, 84)
-  t.is(SeekTime, 0)
-  t.is(Id, '417626')
+  const [{ context: { TitleProgramme } }] = all
+  t.truthy(all.length)
   t.is(TitleProgramme, 'Midi info')
-  t.is(IdMediaUnique, '7970838-0')
 })
 
 test('With 3 segments', async (t) => {
