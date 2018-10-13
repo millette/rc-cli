@@ -6,8 +6,9 @@ import test from 'ava'
 
 // self
 // import { readStream, readStreamAll, readStreamIfSingle, findStream, findMeta } from '.'
-import { readStream, readStreamAll, readStreamIfSingle, findMeta } from '.'
-import cli from './lib/cli'
+// import { readStream, readStreamAll, readStreamIfSingle, findMeta } from '.'
+import { readStream, findMeta } from '.'
+import cli, { makePicks, parseAnswers } from './lib/cli'
 
 test('cli', async (t) => {
   const [one] = await cli(['https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets', '0'], true)
@@ -19,6 +20,34 @@ test('cli', async (t) => {
   t.is(json.Broad, one.Broad)
   unlinkSync(one.outFilename)
   unlinkSync(jsonfile)
+})
+
+/*
+const parseAnswers = ({ confirm }) => {
+  let r
+  const ret = []
+  for (r in confirm) {
+    if (confirm[r]) { ret.push(r) }
+  }
+  return ret
+}
+*/
+
+test('cli makePick', (t) => {
+  const [{ type, name, message }] = makePicks([{ Title: 'El Title', Duration: 120 }])
+  t.is(type, 'confirm')
+  t.is(name, 'confirm.0')
+  t.is(message, 'Download El Title (env. 2m.)')
+})
+
+test('cli parseAnswers', (t) => {
+  const gg = parseAnswers({
+    confirm: {
+      'fee': false,
+      'fo': true
+    }
+  })
+  t.is(gg[0], 'fo')
 })
 
 test('Variable daily', async (t) => {
@@ -145,4 +174,24 @@ test('URL must start with https://ici.radio-canada.ca/', (t) => t.throwsAsync(fi
 test('No valid items match #2', (t) => t.throwsAsync(findMeta('ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'No valid items match.'))
 test('Response code 404 (Not Found)', (t) => t.throwsAsync(findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
 // test('ReadStreamAll (fail)', (t) => t.throwsAsync(readStreamAll('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
-test('ReadStream (fail)', (t) => t.throwsAsync(readStream('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Missing url field.'))
+test(
+  'ReadStream (fail)',
+  (t) => t.throwsAsync(
+    readStream('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'),
+    'Missing url field.'
+  )
+)
+
+test(
+  'cli (fail)',
+  (t) => t.throwsAsync(
+    cli(
+      [
+        'https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets',
+        '5'
+      ],
+      true
+    ),
+    'Invalid index.'
+  )
+)
