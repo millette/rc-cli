@@ -104,26 +104,6 @@ const findMeta = async (s) => {
   return ret
 }
 
-/*
-const readStreamAll = async (s) => {
-  const all = await findMeta(s)
-  if (!all.length) {
-    throw new Error('No stream found.')
-  }
-  return Promise.all(all.map(findStream))
-}
-*/
-
-/*
-const readStreamIfSingle = async (s) => {
-  const all = await findMeta(s)
-  if (all.length !== 1) {
-    throw new Error('Not single.')
-  }
-  return findStream(all[0])
-}
-*/
-
 const findStream = async (one) => {
   if (!one || !one.playlistUrl) {
     throw new Error('Argument should be an object with a playlistUrl field.')
@@ -193,8 +173,6 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
 })
 
 module.exports = {
-  // readStreamIfSingle,
-  // readStreamAll,
   findStream,
   findMeta,
   readStream
