@@ -8,7 +8,7 @@ const { URL } = require('url')
 
 // npm
 const got = require('got')
-const ProgressBar = require('progress')
+// const ProgressBar = require('progress')
 const decode = require('parse-entities')
 
 // self
@@ -32,7 +32,6 @@ const gotPl = got.extend({
 const ffmpegOptions = ['-y', '-ss',, '-i',, '-acodec', 'copy', '-t',,]
 
 const parseJsObject = (str) => {
-  // console.log('STR:', str)
   // eslint-disable-next-line no-eval
   const { mediaUniqueId, playTitle } = eval(`let $root = { mediaUniqueId: null }, isPlaying, play; play = ${str}`)
   return mediaUniqueId && playTitle && {
@@ -57,39 +56,6 @@ const findEm = (str) => {
   }
   throw new Error('None found.')
 }
-
-const readStream = ({ one, body }) => new Promise((resolve, reject) => {
-  // console.log('BODY:', body)
-  const { url } = body
-  if (!url) { return }
-  console.error('Reading stream...')
-  const outFilename = `${one.IdMediaUnique}.aac`
-  const bar = new ProgressBar(':bar :eta s.', { clear: true, total: one.Duration })
-  const opts = [...ffmpegOptions]
-  opts[2] = one.SeekTime
-  opts[4] = url
-  opts[8] = one.Duration
-  opts[9] = outFilename
-  const ff = spawn('ffmpeg', opts)
-  let lastSecs = 0
-  ff.stderr.on('data', (data) => {
-    const time = data.toString().match(re3)
-    if (time) {
-      const [, h, m, s, ms] = time
-      const secs = Date.UTC(1970, 0, 1, parseInt(h, 10), parseInt(m, 10), parseInt(s, 10) + Math.round(parseInt(ms, 10) / 100)) / 1000
-      bar.tick(secs - lastSecs)
-      lastSecs = secs
-    }
-  })
-  ff.once('close', (code) => {
-    if (code) {
-      reject(new Error(`ffmpeg process exited with code ${code}`))
-    } else {
-      resolve(outFilename)
-    }
-  })
-  ff.once('error', reject)
-})
 
 const findOne = (j, o1) => {
   const thing = o1.IdMediaUnique && j.QueueItems.find(({ IdMediaUnique }) => IdMediaUnique === o1.IdMediaUnique)
@@ -180,24 +146,49 @@ const findStream = async (one) => {
   }
 }
 
-/*
-module.exports = (s) => findMeta(s)
-  .then(findStream)
-  .then(readStream)
-  .then((outFilename) => outFilename && console.error('Downloaded', outFilename))
-  .catch((err) => {
-    if ((err.errno === 'ENOENT') && (err.path === 'ffmpeg')) {
-      throw new Error('ffmpeg is required and must be found in the path.')
-    }
-    if (err.statusCode === 404) {
-      throw new Error(`Not found: ${err.url}`)
-    }
-    throw err
-  })
-*/
+const ffmpegger = ({ SeekTime, Duration, IdMediaUnique }, url, outFilename) => {
+  const opts = [...ffmpegOptions]
+  opts[2] = SeekTime
+  opts[4] = url
+  opts[8] = Duration
+  opts[9] = outFilename || `${IdMediaUnique}.aac`
+  return spawn('ffmpeg', opts)
+}
 
-module.exports.findStream = findStream
-module.exports.findMeta = findMeta
-module.exports.readStream = readStream
-module.exports.readStreamIfSingle = readStreamIfSingle
-module.exports.readStreamAll = readStreamAll
+// const readStream = ({ one, url }, ping = () => undefined) => new Promise((resolve, reject) => {
+const readStream = (one, ping = () => undefined) => new Promise((resolve, reject) => {
+  const url = one && one.streamUrl && one.streamUrl.full
+  if (!url) {
+    throw new Error('Missing url field.')
+  }
+  // console.error('Reading stream...')
+  const ff = ffmpegger(one, url)
+  let lastSecs = 0
+  ff.stderr.on('data', (data) => {
+    const time = data.toString().match(re3)
+    if (time) {
+      const [, h, m, s, ms] = time
+      const secs = Date.UTC(1970, 0, 1, parseInt(h, 10), parseInt(m, 10), parseInt(s, 10) + Math.round(parseInt(ms, 10) / 100)) / 1000
+      // bar.tick(secs - lastSecs)
+      ping(secs - lastSecs)
+      lastSecs = secs
+    }
+  })
+  ff.once('close', (code) => {
+    if (code) {
+      reject(new Error(`ffmpeg process exited with code ${code}`))
+    } else {
+      resolve()
+      // resolve(outFilename)
+    }
+  })
+  ff.once('error', reject)
+})
+
+module.exports = {
+  findStream,
+  findMeta,
+  readStream,
+  readStreamIfSingle,
+  readStreamAll
+}
