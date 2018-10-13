@@ -1,19 +1,35 @@
 // core
-import { statSync, unlinkSync, mkdirSync } from 'fs'
+import { statSync, unlinkSync } from 'fs'
 
 // npm
 import test from 'ava'
 
 // self
-import { readStream, readStreamAll, readStreamIfSingle, findStream, findMeta } from '.'
+// import { readStream, readStreamAll, readStreamIfSingle, findStream, findMeta } from '.'
+import { readStream, readStreamAll, readStreamIfSingle, findMeta } from '.'
+import cli from './lib/cli'
+
+test('cli', async (t) => {
+  const [one] = await cli(['https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets', '0'], true)
+  t.is(one.outFilename, 'tests/7969196-657.aac')
+  const { size } = statSync(one.outFilename)
+  t.is(size, 12263336)
+  const jsonfile = one.outFilename.replace('.aac', '.json')
+  const json = require(`./${jsonfile}`)
+  t.is(json.Broad, one.Broad)
+  unlinkSync(one.outFilename)
+  unlinkSync(jsonfile)
+})
+
+test('Variable daily', async (t) => {
+  const all = await findMeta('ici.radio-canada.ca/premiere/emissions/midi-info')
+  const [{ context: { TitleProgramme } }] = all
+  t.truthy(all.length)
+  t.is(TitleProgramme, 'Midi info')
+})
 
 /*
-  * https://ici.radio-canada.ca/premiere/emissions/info-matin/episodes/417134/audio-fil-du-jeudi-4-octobre-2018
-  * NONO https://ici.radio-canada.ca/premiere/emissions/premiere-heure/segments/entrevue/87613/virage-numerique-entreprise
-  * https://ici.radio-canada.ca/premiere/emissions/premiere-heure/segments/entrevue/875613/virage-numerique-entreprise
-*/
-
-test('ReadStream (one of three)', async (t) => {
+test.skip('ReadStream (one of three)', async (t) => {
   const [one] = await findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets')
   const g = await findStream(one)
   g.outFilename = `tests/${g.IdMediaUnique}.aac`
@@ -94,13 +110,6 @@ test('Single segment #2', async (t) => {
   t.is(IdMediaUnique, '7967514-51')
 })
 
-test('Variable daily', async (t) => {
-  const all = await findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info')
-  const [{ context: { TitleProgramme } }] = all
-  t.truthy(all.length)
-  t.is(TitleProgramme, 'Midi info')
-})
-
 test('With 3 segments', async (t) => {
   const all = await findMeta('https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos')
   const [g] = all
@@ -127,12 +136,13 @@ test('Without http or https', async (t) => {
   t.is(g.SeekTime, 657)
   t.is(g.IdMediaUnique, '7969196-657')
 })
+*/
 
-test('ReadStreamIfSingle (not single)', (t) => t.throwsAsync(readStreamIfSingle('https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos'), 'Not single.'))
+// test('ReadStreamIfSingle (not single)', (t) => t.throwsAsync(readStreamIfSingle('https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos'), 'Not single.'))
 test('Response code 500 (Internal Server Error)', (t) => t.throwsAsync(findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/989953/agriculture-changements-climatiques-production-effets'), 'Response code 500 (Internal Server Error)'))
 test('No valid items match #1', (t) => t.throwsAsync(findMeta('http://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'No valid items match.'))
 test('URL must start with https://ici.radio-canada.ca/', (t) => t.throwsAsync(findMeta('https://bob.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'URL must start with https://ici.radio-canada.ca/'))
 test('No valid items match #2', (t) => t.throwsAsync(findMeta('ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'No valid items match.'))
 test('Response code 404 (Not Found)', (t) => t.throwsAsync(findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
-test('ReadStreamAll (fail)', (t) => t.throwsAsync(readStreamAll('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
+// test('ReadStreamAll (fail)', (t) => t.throwsAsync(readStreamAll('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
 test('ReadStream (fail)', (t) => t.throwsAsync(readStream('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Missing url field.'))
