@@ -104,6 +104,7 @@ const findMeta = async (s) => {
   return ret
 }
 
+/*
 const readStreamAll = async (s) => {
   const all = await findMeta(s)
   if (!all.length) {
@@ -111,7 +112,9 @@ const readStreamAll = async (s) => {
   }
   return Promise.all(all.map(findStream))
 }
+*/
 
+/*
 const readStreamIfSingle = async (s) => {
   const all = await findMeta(s)
   if (all.length !== 1) {
@@ -119,6 +122,7 @@ const readStreamIfSingle = async (s) => {
   }
   return findStream(all[0])
 }
+*/
 
 const findStream = async (one) => {
   if (!one || !one.playlistUrl) {
@@ -150,7 +154,6 @@ const ffmpegger = ({ outFilename, SeekTime, Duration, IdMediaUnique }, url) => {
   opts[2] = SeekTime
   opts[4] = url
   opts[8] = Duration
-  // opts[9] = outFilename || `${IdMediaUnique}.aac`
   opts[9] = outFilename
   return spawn('ffmpeg', opts)
 }
@@ -190,9 +193,9 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
 })
 
 module.exports = {
+  // readStreamIfSingle,
+  // readStreamAll,
   findStream,
   findMeta,
-  readStream,
-  readStreamIfSingle,
-  readStreamAll
+  readStream
 }
