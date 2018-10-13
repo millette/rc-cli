@@ -35,6 +35,7 @@ const parseJsObject = (str) => {
   return mediaUniqueId && playTitle && {
     IdMediaUnique: mediaUniqueId,
     Title: decode(decode(playTitle))
+      .replace(' (Écouter l\'élément)', '')
       .replace(' (Écouter l’élément)', '')
       .replace(' (Écouter le segment)', '')
   }
@@ -144,22 +145,27 @@ const findStream = async (one) => {
   }
 }
 
-const ffmpegger = ({ SeekTime, Duration, IdMediaUnique }, url, outFilename) => {
+const ffmpegger = ({ outFilename, SeekTime, Duration, IdMediaUnique }, url) => {
   const opts = [...ffmpegOptions]
   opts[2] = SeekTime
   opts[4] = url
   opts[8] = Duration
-  opts[9] = outFilename || `${IdMediaUnique}.aac`
+  // opts[9] = outFilename || `${IdMediaUnique}.aac`
+  opts[9] = outFilename
   return spawn('ffmpeg', opts)
 }
 
-// const readStream = ({ one, url }, ping = () => undefined) => new Promise((resolve, reject) => {
 const readStream = (one, ping = () => undefined) => new Promise((resolve, reject) => {
   const url = one && one.streamUrl && one.streamUrl.full
   if (!url) {
     throw new Error('Missing url field.')
   }
-  // console.error('Reading stream...')
+  const now = Date.now()
+
+  if (!one.outFilename) {
+    one.outFilename = `${one.IdMediaUnique}.aac`
+  }
+
   const ff = ffmpegger(one, url)
   let lastSecs = 0
   ff.stderr.on('data', (data) => {
@@ -167,7 +173,6 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
     if (time) {
       const [, h, m, s, ms] = time
       const secs = Date.UTC(1970, 0, 1, parseInt(h, 10), parseInt(m, 10), parseInt(s, 10) + Math.round(parseInt(ms, 10) / 100)) / 1000
-      // bar.tick(secs - lastSecs)
       ping(secs - lastSecs)
       lastSecs = secs
     }
@@ -176,8 +181,9 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
     if (code) {
       reject(new Error(`ffmpeg process exited with code ${code}`))
     } else {
-      resolve()
-      // resolve(outFilename)
+      one.elapsed = Math.round((Date.now() - now) / 1000)
+      one.now = new Date().toISOString()
+      resolve(one)
     }
   })
   ff.once('error', reject)
