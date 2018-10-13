@@ -38,10 +38,6 @@ test('ReadStreamIfSingle', async (t) => {
   t.is(pathname, '/i/diffusion/2018/10/medianet/cbf/2018-10-08_11_30_00_midiinfo_0000_,128,.mp4.csmil/master.m3u8')
 })
 
-test('ReadStreamIfSingle (not single)', async (t) => {
-  await t.throwsAsync(readStreamIfSingle('https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos'), 'Not single.')
-})
-
 test('Single segment; findStream', async (t) => {
   const all = await findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets')
   const [{ Duration, SeekTime, IdMediaUnique }] = all
@@ -110,6 +106,7 @@ test('Without http or https', async (t) => {
   t.is(g.IdMediaUnique, '7969196-657')
 })
 
+test('ReadStreamIfSingle (not single)', (t) => t.throwsAsync(readStreamIfSingle('https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos'), 'Not single.'))
 test('Response code 500 (Internal Server Error)', (t) => t.throwsAsync(findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/989953/agriculture-changements-climatiques-production-effets'), 'Response code 500 (Internal Server Error)'))
 test('No valid items match #1', (t) => t.throwsAsync(findMeta('http://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'No valid items match.'))
 test('URL must start with https://ici.radio-canada.ca/', (t) => t.throwsAsync(findMeta('https://bob.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'URL must start with https://ici.radio-canada.ca/'))
