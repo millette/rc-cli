@@ -50,9 +50,12 @@ const findEm = (str) => {
       ret.push(o)
     }
   }
+
+  /* istanbul ignore next */
   if (ret.length) {
     return ret
   }
+  /* istanbul ignore next */
   throw new Error('None found.')
 }
 
@@ -61,6 +64,7 @@ const findOne = (j, o1) => {
   if (!thing || !thing.Duration) {
     return
   }
+  /* istanbul ignore else */
   if (thing.RelatedContents && thing.RelatedContents.length) {
     thing.RelatedContents = thing.RelatedContents.map((a) => ({
       ...a,
@@ -90,14 +94,18 @@ const findMeta = async (s) => {
   }
   const { body } = await gotStream(s)
   const x = body.match(re)
+
+  /* istanbul ignore if */
   if (!x || !x[1]) {
     throw new Error('Yikes1')
   }
   const j = JSON.parse(x[1])
+  /* istanbul ignore if */
   if (!j.QueueItems || !j.QueueItems.length) {
     throw new Error('No items found.')
   }
   const ret = findEm(body).map(findOne.bind(null, j)).filter(Boolean)
+  /* istanbul ignore if */
   if (!ret.length) {
     throw new Error('No valid items match.')
   }
@@ -105,10 +113,13 @@ const findMeta = async (s) => {
 }
 
 const findStream = async (one) => {
+  /* istanbul ignore if */
   if (!one || !one.playlistUrl) {
     throw new Error('Argument should be an object with a playlistUrl field.')
   }
   const { body: { message, errorCode, url, bitrates } } = await gotPl(one.playlistUrl)
+
+  /* istanbul ignore if */
   if (message || errorCode) {
     const err = new Error(message || 'Undetermined error')
     if (errorCode) {
@@ -145,6 +156,7 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
   }
   const now = Date.now()
 
+  /* istanbul ignore if */
   if (!one.outFilename) {
     one.outFilename = `${one.IdMediaUnique}.aac`
   }
@@ -161,6 +173,7 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
     }
   })
   ff.once('close', (code) => {
+    /* istanbul ignore if */
     if (code) {
       reject(new Error(`ffmpeg process exited with code ${code}`))
     } else {
