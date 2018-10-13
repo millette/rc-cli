@@ -1,14 +1,12 @@
 'use strict'
 
 // core
-// const fs = require('fs')
 const { spawn } = require('child_process')
 const { parse } = require('querystring')
 const { URL } = require('url')
 
 // npm
 const got = require('got')
-// const ProgressBar = require('progress')
 const decode = require('parse-entities')
 
 // self
@@ -18,8 +16,8 @@ const re = / data-name="audiofil".+>([^]+?)<\/script>/
 const re3 = / time=(\d\d):(\d\d):(\d\d)\.(\d\d) bitrate/
 const reMedias = /A11yTitlePlayPause *: *(\{[^]+?\})/g
 
-const gotStream = got.extend({ headers: { 'User-Agent': `${name} v${version}` } })
 const Authorization = 'Client-Key 773aea60-0e80-41bb-9c7f-e6d7c3ad17fb'
+const gotStream = got.extend({ headers: { 'User-Agent': `${name} v${version}` } })
 const gotPl = got.extend({
   json: true,
   headers: {
