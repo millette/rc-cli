@@ -1,14 +1,36 @@
+// core
+import { statSync, unlinkSync, mkdirSync } from 'fs'
+
 // npm
 import test from 'ava'
 
 // self
-import { readStreamAll, readStreamIfSingle, findStream, findMeta } from '.'
+import { readStream, readStreamAll, readStreamIfSingle, findStream, findMeta } from '.'
 
 /*
   * https://ici.radio-canada.ca/premiere/emissions/info-matin/episodes/417134/audio-fil-du-jeudi-4-octobre-2018
   * NONO https://ici.radio-canada.ca/premiere/emissions/premiere-heure/segments/entrevue/87613/virage-numerique-entreprise
   * https://ici.radio-canada.ca/premiere/emissions/premiere-heure/segments/entrevue/875613/virage-numerique-entreprise
 */
+
+test('ReadStream (one of three)', async (t) => {
+  const [one] = await findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets')
+  const g = await findStream(one)
+  g.outFilename = `tests/${g.IdMediaUnique}.aac`
+  try {
+    mkdirSync('tests')
+  } catch (e) {
+    try {
+      unlinkSync(g.outFilename)
+    } catch (e) {
+      // nop
+    }
+  }
+  const s = await readStream(g)
+  const { size } = statSync(s.outFilename)
+  unlinkSync(s.outFilename)
+  t.is(size, 12263336)
+})
 
 test('ReadStreamAll (three)', async (t) => {
   const all = await readStreamAll('https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos')
@@ -113,3 +135,4 @@ test('URL must start with https://ici.radio-canada.ca/', (t) => t.throwsAsync(fi
 test('No valid items match #2', (t) => t.throwsAsync(findMeta('ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/9953/agriculture-changements-climatiques-production-effets'), 'No valid items match.'))
 test('Response code 404 (Not Found)', (t) => t.throwsAsync(findMeta('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
 test('ReadStreamAll (fail)', (t) => t.throwsAsync(readStreamAll('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Response code 404 (Not Found)'))
+test('ReadStream (fail)', (t) => t.throwsAsync(readStream('https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/'), 'Missing url field.'))
