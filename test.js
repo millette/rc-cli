@@ -8,17 +8,19 @@ import test from 'ava'
 import { readStream, findMeta, findStream } from '.'
 import cli, { makePicks, parseAnswers } from './lib/cli'
 
-test('cli', async (t) => {
-  const [one] = await cli(['https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets', '0'], true)
-  t.is(one.outFilename, 'tests/7969196-657.aac')
-  const { size } = statSync(one.outFilename)
-  t.is(size, 12263336)
-  const jsonfile = one.outFilename.replace('.aac', '.json')
-  const json = require(`./${jsonfile}`)
-  t.is(json.Broad, one.Broad)
-  unlinkSync(one.outFilename)
-  unlinkSync(jsonfile)
-})
+if (!process.env.TRAVIS) {
+  test('cli', async (t) => {
+    const [one] = await cli(['https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets', '0'], true)
+    t.is(one.outFilename, 'tests/7969196-657.aac')
+    const { size } = statSync(one.outFilename)
+    t.is(size, 12263336)
+    const jsonfile = one.outFilename.replace('.aac', '.json')
+    const json = require(`./${jsonfile}`)
+    t.is(json.Broad, one.Broad)
+    unlinkSync(one.outFilename)
+    unlinkSync(jsonfile)
+  })
+}
 
 test('cli makePick', (t) => {
   const [{ type, name, message }] = makePicks([{ Title: 'El Title', Duration: 120 }])
