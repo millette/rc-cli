@@ -95,9 +95,8 @@ const findMeta = async (s) => {
   const { body } = await gotStream(s)
   const x = body.match(re)
 
-  /* istanbul ignore if */
   if (!x || !x[1]) {
-    throw new Error('Yikes1')
+    throw new Error('No items found.')
   }
   const j = JSON.parse(x[1])
   /* istanbul ignore if */
