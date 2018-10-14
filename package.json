@@ -1,5 +1,6 @@
 {
   "name": "radcan",
+  "description": "Utility to download audio files from Radio-Canada",
   "version": "0.0.3",
   "main": "index.js",
   "bin": "cli.js",
