@@ -1,12 +1,17 @@
 {
   "name": "rc-cli",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "main": "index.js",
   "bin": "cli.js",
   "engines": {
     "node": ">=8.12.0"
   },
-  "license": "AGPL-3.0-or-later",
+  "files": [
+    "index.js",
+    "cli.js",
+    "lib/cli.js"
+  ],
+  "license": "AGPL-3.0",
   "repository": "millette/rc-cli",
   "author": {
     "name": "Robin Millette",
