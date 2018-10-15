@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "got": "^9.2.2",
+    "meow": "^5.0.0",
     "p-each-series": "^1.0.0",
     "parse-entities": "^1.2.0",
     "progress": "^2.0.0",
