@@ -32,9 +32,11 @@
     "coveralls": "^3.0.2",
     "dependency-check": "^3.2.1",
     "nyc": "^13.0.1",
+    "pkg": "^4.3.4",
     "standard": "^12.0.1"
   },
   "scripts": {
+    "pkg": "standard && pkg .",
     "lint": "standard",
     "test": "standard && nyc ava",
     "deps": "standard && dependency-check . && dependency-check . --unused --no-dev",
