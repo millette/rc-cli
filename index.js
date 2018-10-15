@@ -51,11 +51,11 @@ const findEm = (str) => {
     }
   }
 
-  /* istanbul ignore next */
+  // istanbul ignore next
   if (ret.length) {
     return ret
   }
-  /* istanbul ignore next */
+  // istanbul ignore next
   throw new Error('None found.')
 }
 
@@ -64,7 +64,7 @@ const findOne = (j, o1) => {
   if (!thing || !thing.Duration) {
     return
   }
-  /* istanbul ignore else */
+  // istanbul ignore else
   if (thing.RelatedContents && thing.RelatedContents.length) {
     thing.RelatedContents = thing.RelatedContents.map((a) => ({
       ...a,
@@ -81,7 +81,8 @@ const findOne = (j, o1) => {
   }
 }
 
-const findMeta = async (s) => {
+const findMeta = async (cliArgs) => {
+  let s = cliArgs && cliArgs.input && cliArgs.input[0]
   if (typeof s !== 'string' || !s) {
     throw new Error('URL must start with https://ici.radio-canada.ca/')
   }
@@ -99,26 +100,31 @@ const findMeta = async (s) => {
     throw new Error('No items found.')
   }
   const j = JSON.parse(x[1])
-  /* istanbul ignore if */
+  // istanbul ignore if
   if (!j.QueueItems || !j.QueueItems.length) {
     throw new Error('No items found.')
   }
   const ret = findEm(body).map(findOne.bind(null, j)).filter(Boolean)
-  /* istanbul ignore if */
   if (!ret.length) {
     throw new Error('No valid items match.')
   }
-  return ret
+
+  return ret.map((one) => {
+    if (cliArgs.flags && cliArgs.flags.dir) {
+      one.outFilename = `${cliArgs.flags.dir}/${one.IdMediaUnique}.aac`
+    }
+    return one
+  })
 }
 
 const findStream = async (one) => {
-  /* istanbul ignore if */
+  // istanbul ignore if
   if (!one || !one.playlistUrl) {
     throw new Error('Argument should be an object with a playlistUrl field.')
   }
   const { body: { message, errorCode, url, bitrates } } = await gotPl(one.playlistUrl)
 
-  /* istanbul ignore if */
+  // istanbul ignore next
   if (message || errorCode) {
     const err = new Error(message || 'Undetermined error')
     if (errorCode) {
@@ -154,12 +160,6 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
     throw new Error('Missing url field.')
   }
   const now = Date.now()
-
-  /* istanbul ignore if */
-  if (!one.outFilename) {
-    one.outFilename = `${one.IdMediaUnique}.aac`
-  }
-
   const ff = ffmpegger(one, url)
   let lastSecs = 0
   ff.stderr.on('data', (data) => {
@@ -172,7 +172,7 @@ const readStream = (one, ping = () => undefined) => new Promise((resolve, reject
     }
   })
   ff.once('close', (code) => {
-    /* istanbul ignore if */
+    // istanbul ignore if
     if (code) {
       reject(new Error(`ffmpeg process exited with code ${code}`))
     } else {
