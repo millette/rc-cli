@@ -18,12 +18,14 @@ Interactive
 radcan https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos
 ```
 
-Pick first (0)
+Pick first (1)
 ```sh
-radcan https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos 0
+radcan https://ici.radio-canada.ca/premiere/premiereplus/science/p/49306/limprimante-3d-arrive-et-elle-va-changer-nos --id 1
 ```
 
-Files are download to ```outs/``` in the current directory. The audio files have the ```.aac``` extension and the metadata is found in ```.json``` files.
+Files are download to the current directory. The audio files have the ```.aac``` extension and the metadata is found in ```.json``` files.
+
+See ```radcan --help``` for more options.
 
 ## License
 AGPL-v3 © 2018 [Robin Millette](http://robin.millette.info)
