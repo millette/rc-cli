@@ -14,7 +14,7 @@ if (!process.env.TRAVIS) {
       {
         input: ['https://ici.radio-canada.ca/premiere/emissions/midi-info/segments/entrevue/89953/agriculture-changements-climatiques-production-effets'],
         flags: {
-          id: '0',
+          id: 1,
           dir: 'tests',
           quiet: true
         }
