@@ -1,8 +1,6 @@
 node_modules
 .nyc_output
 tests
-outs
 radcan-linux
 radcan-macos
 radcan-win.exe
-pp.js
