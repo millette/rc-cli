@@ -24,7 +24,7 @@
     "meow": "^5.0.0",
     "p-each-series": "^1.0.0",
     "parse-entities": "^1.2.0",
-    "progress": "^2.0.0",
+    "progress": "^2.0.1",
     "prompts": "^1.1.1"
   },
   "devDependencies": {
